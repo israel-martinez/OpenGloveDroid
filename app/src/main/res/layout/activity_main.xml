@@ -37,29 +37,11 @@
         android:id="@+id/button_connect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="15dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="60dp"
         android:drawableEnd="@android:drawable/stat_sys_data_bluetooth"
         android:text="@string/button_connect"
         android:onClick="connectDevice"/>
-
-    <TextView
-        android:id="@+id/text_view_protocol_command"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/text_view_device_name"
-        android:layout_marginTop="25dp"
-        android:textSize="17sp"
-        android:text="@string/protocol_command"/>
-
-    <EditText
-        android:id="@+id/edit_text_command"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/text_view_protocol_command"
-        android:layout_centerHorizontal="true"
-        android:textSize="15sp"
-        android:text="@string/initialize_motor"/>
 
     <Button
         android:id="@+id/button_send_message"
@@ -67,8 +49,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="60dp"
-        android:drawableEnd="@android:drawable/ic_menu_send"
-        android:text="@string/button_send"
+        android:text="@string/button_motor_OFF"
         android:onClick="sendMessage"/>
 
 

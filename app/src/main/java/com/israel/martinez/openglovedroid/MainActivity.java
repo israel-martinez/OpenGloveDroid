@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -133,8 +134,10 @@ public class MainActivity extends AppCompatActivity {
     public void sendMessage(View view){
         if(mState == DEACTIVATE_MOTOR) {
             mState = ACTIVATE_MOTOR;
+            ((Button) view).setText(R.string.button_motor_ON);
         } else {
             mState = DEACTIVATE_MOTOR;
+            ((Button) view).setText(R.string.button_motor_OFF);
         }
         Message completeMessage =
                 mHandlerConnectedThread.obtainMessage(mState);//in this case only need send the state ON/OFF

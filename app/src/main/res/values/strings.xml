@@ -15,4 +15,11 @@
     <!-- buttons -->
     <string name="button_connect">Connect</string>
     <string name="button_send">Send</string>
+
+    <string name="button_ON">On</string>
+    <string name="button_OFF">Off</string>
+
+    <string name="button_motor_ON">Motor On</string>
+    <string name="button_motor_OFF">Motor Off</string>
+
 </resources>
