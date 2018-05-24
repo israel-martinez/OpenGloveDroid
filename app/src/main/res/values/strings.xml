@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">OpenGloveDroid</string>
+
+    <string name="device_name">Device name:</string>
+    <string name="device_name_openglove">OpenGloveIZQ</string>
+    <string name="protocol_command">Command:</string>
+
+    <!-- commands -->
+    <string name="initialize_motor">1,1,11s</string>
+    <string name="activate_motor">2,1,255s</string>
+
+    <string name="devices_list">Devices list</string>
+    <string name="list_item">List item</string>
+
+    <!-- buttons -->
+    <string name="button_connect">Connect</string>
+    <string name="button_send">Send</string>
+</resources>
