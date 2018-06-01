@@ -26,6 +26,12 @@ public class MessageGenerator {
     static final private String ANALOG_WRITE_FUNCTION_NUMBER = "8";
     static final private String INITIALIZE_MOTOR_TIME_TEST_FUNCTION_NUMBER = "9";
 
+    static final private String ADD_FLEXOR_INPUT_FUNCTION_NUMBER = "10";
+    static final private String REMOVE_FLEXOR_INPUT_FUNCTION_NUMBER =  "11";
+    static final private String CALIBRATE_FLEXORS_INPUT_FUNCTION_NUMBER = "12";
+    static final private String SET_THRESHOLD_INPUT_FUNCTION_NUMBER  = "13";
+    static final private String RESET_FLEXORS_INPUT_FUNCTION_NUMBER = "14";
+
     /**
      * Generate a message to initialize pins like motors in the control software
      * @param pins List of pins that  are initialized
@@ -333,6 +339,42 @@ public class MessageGenerator {
         return analogWriteMessage.toString();
 
     }
-    
-    
+
+
+    public String addFlexor(int pin, int mapping)
+    {
+        String message = ADD_FLEXOR_INPUT_FUNCTION_NUMBER + SEPARATOR + pin
+                + SEPARATOR + mapping + TERMINAL;
+        return message;
+    }
+
+    public String removeFlexor(int mapping)
+    {
+        String message = REMOVE_FLEXOR_INPUT_FUNCTION_NUMBER + SEPARATOR + mapping + TERMINAL;
+        return message;
+    }
+
+    public String calibrateFlexors()
+    {
+        String message = CALIBRATE_FLEXORS_INPUT_FUNCTION_NUMBER + TERMINAL;
+        return message;
+    }
+
+    public String confirmCalibration()
+    {
+        String message = "e";
+        return message;
+    }
+
+    public String setThreshold(int value)
+    {
+        String message = SET_THRESHOLD_INPUT_FUNCTION_NUMBER + SEPARATOR + value + TERMINAL;
+        return message;
+    }
+
+    public String resetFlexors()
+    {
+        String message = RESET_FLEXORS_INPUT_FUNCTION_NUMBER + TERMINAL;
+        return message;
+    }
 }

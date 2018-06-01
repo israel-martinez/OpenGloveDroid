@@ -16,18 +16,26 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.israel.martinez.openglovedroid.OpenGloveJavaAPI.MessageGenerator;
 
+import org.w3c.dom.Text;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,6 +44,13 @@ public class MainActivity extends AppCompatActivity {
 
     private final int DEACTIVATE_MOTOR = 0;
     private final int ACTIVATE_MOTOR = 1;
+    private static final int ADD_FLEXOR = 10;
+    private static final int REMOVE_FLEXOR =  11;
+    private static final int CALIBRATE_FLEXORS = 12;
+    private static final int SET_THRESHOLD = 13;
+    private static final int RESET_FLEXORS = 14;
+
+    private static final int UPDATE_FLEXOR_VALUE = 100;
 
 
     private final String MY_UUID = "1e966f42-52a8-45db-9735-5db0e21b881d";
@@ -52,6 +67,14 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> mValuesOFF  = new ArrayList<>(
             Arrays.asList("LOW", "LOW"));
 
+    // Flexor pins: 17 and  + and -
+    ArrayList<Integer> mFlexorPins = new ArrayList<>(
+            Arrays.asList(17));
+    ArrayList<Integer> mFlexorMapping = new ArrayList<>(
+            Arrays.asList(8));
+    ArrayList<String> mFlexorPinsMode = new ArrayList<>(
+            Arrays.asList("OUTPUT"));
+
     private BluetoothAdapter mBluetoothAdapter;
     private ArrayList<String> mDeviceList = new ArrayList<>();
     private ArrayList<String> mDeviceNamesList = new ArrayList<>();
@@ -59,10 +82,14 @@ public class MainActivity extends AppCompatActivity {
 
     private ListView mListViewDevices;
     private EditText mEditTextDeviceName;
+    private TextView mTextViewFlexor;
+    private ProgressBar mProgressBar;
+    private int mMinProgress = 0;
+    private int mMaxProgress = 270;
 
     private BluetoothDevice mBluetoothDevice;
 
-    private Handler mHandler;
+    private Handler mUIHandler;
     private Handler mHandlerConnectedThread;
 
     private MessageGenerator messageGenerator = new MessageGenerator();
@@ -75,6 +102,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mEditTextDeviceName = findViewById(R.id.edit_text_device_name);
+        mTextViewFlexor = findViewById(R.id.text_view_flexor);
+        mProgressBar = findViewById(R.id.progress_bar_flexor);
+        mProgressBar.setMax(mMaxProgress);
 
         mListViewDevices = findViewById(R.id.list_view_devices);
         mListViewDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -83,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
                 mEditTextDeviceName.setText(mDeviceNamesList.get(position));
             }
         });
-
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -102,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         /* Handler for send data from threads to UI */
-        mHandler = new Handler(Looper.getMainLooper()) {
+        mUIHandler = new Handler(Looper.getMainLooper()) {
             /*
              * handleMessage() defines the operations to perform when
              * the Handler receives a new Message to process.
@@ -113,16 +142,19 @@ public class MainActivity extends AppCompatActivity {
                 //PhotoTask photoTask = (PhotoTask) inputMessage.obj;
                 //TODO get data from threads
                 Log.e("UI_THREAD", "Receiving message on UI thread");
+                switch (inputMessage.what) {
+                    case UPDATE_FLEXOR_VALUE: {
+                        mProgressBar.setProgress((int) inputMessage.obj);
+                        String flexorValue = "Flexor value: " + Integer.toString((int) inputMessage.obj);
+                        mTextViewFlexor.setText(flexorValue);
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
             }
         };
-    }
-
-    public void initializeMotorPinsList() {
-        //mPins.add(11); //test motor +11 y -12 (pin 11)
-    }
-
-    public void initializeActivateMotorsPinsActivationList () {
-
     }
 
     public void connectDevice(View view) {
@@ -305,6 +337,7 @@ public class MainActivity extends AppCompatActivity {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+        private BufferedReader mmBufferedReader;
         private Handler mHandler;
 
         public ConnectedThread(BluetoothSocket socket) {
@@ -321,6 +354,7 @@ public class MainActivity extends AppCompatActivity {
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+            mmBufferedReader = new BufferedReader(new InputStreamReader(mmInStream));
 
             /* Handler for receiving the actions from UI interactions */
             mHandler = new Handler(Looper.getMainLooper()) {
@@ -350,6 +384,13 @@ public class MainActivity extends AppCompatActivity {
                             } catch (IOException e) { }
                             break;
                         }
+                        case ADD_FLEXOR: {
+                            String message = messageGenerator.addFlexor(mFlexorPins.get(0), mFlexorMapping.get(0));
+                            try {
+                                mmOutStream.write(message.getBytes());
+                            } catch (IOException e) { }
+                            break;
+                        }
                         default: {
                             break;
                         }
@@ -369,22 +410,48 @@ public class MainActivity extends AppCompatActivity {
 
                 String message = messageGenerator.initializeMotor(mPins);
                 this.write(message.getBytes());
+
+                //message = messageGenerator.pinMode(mFlexorPins, mFlexorPinsMode);
+                //this.write(message.getBytes());
+
+                message = messageGenerator.setThreshold(0);
+                this.write(message.getBytes());
+
             } catch (Error e) {
                 Log.e("FAIL_INITIALIZE_MOTOR", "Fail to initialize the motor");
             }
 
             // Keep listening to the InputStream until an exception occurs
+            String line;
+            Message message;
             while (true) {
                 try {
                     // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
-                    //Log.e("Buffer: ", buffer.toString());
                     //TODO capture message from the flexor
+                    line = analogRead(17);
+                    if(line != null) Log.e("BUFFER: ", line);
+                    //TODO send message data to UI
+                    message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE, Integer.parseInt(line));
+                    message.sendToTarget();
 
-                } catch (IOException e) {
-                    Log.e("IOException","Error in try read/write loop");
+
+                } catch (Exception e) {
+                    Log.e("Exception","Error in try read/write loop");
+                    e.printStackTrace();
                     break;
                 }
+            }
+        }
+
+        public String analogRead(int pin){
+            String message = messageGenerator.analogRead(pin);
+            this.write(message.getBytes());
+
+            try {
+                return mmBufferedReader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
             }
         }
 

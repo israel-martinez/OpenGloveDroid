@@ -52,11 +52,28 @@
         android:text="@string/button_motor_OFF"
         android:onClick="sendMessage"/>
 
+    <TextView
+        android:id="@+id/text_view_flexor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/button_send_message"
+        android:text="@string/flexor_value"/>
+
+    <ProgressBar
+        android:id="@+id/progress_bar_flexor"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@id/text_view_flexor"
+        android:layout_alignBaseline="@id/text_view_flexor"
+        android:layout_centerHorizontal="true"
+        android:indeterminate="false"
+        style="@android:style/Widget.ProgressBar.Horizontal"/>
+
 
     <ListView
         android:id="@+id/list_view_devices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/button_send_message"/>
+        android:layout_below="@+id/progress_bar_flexor"/>
 
 </RelativeLayout>

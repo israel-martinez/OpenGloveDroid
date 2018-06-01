@@ -22,4 +22,6 @@
     <string name="button_motor_ON">Motor On</string>
     <string name="button_motor_OFF">Motor Off</string>
 
+    <string name="flexor_value">Flexor value: </string>
+
 </resources>
