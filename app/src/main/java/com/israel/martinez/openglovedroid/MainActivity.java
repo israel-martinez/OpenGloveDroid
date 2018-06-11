@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.bluetooth.*;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -84,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEditTextDeviceName;
     private TextView mTextViewFlexor;
     private ProgressBar mProgressBar;
+    private EditText mEditTextThreshold;
+
     private int mMinProgress = 0;
     private int mMaxProgress = 270;
 
@@ -101,10 +104,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
         mEditTextDeviceName = findViewById(R.id.edit_text_device_name);
         mTextViewFlexor = findViewById(R.id.text_view_flexor);
         mProgressBar = findViewById(R.id.progress_bar_flexor);
         mProgressBar.setMax(mMaxProgress);
+        mEditTextThreshold = findViewById(R.id.edit_text_threshold);
 
         mListViewDevices = findViewById(R.id.list_view_devices);
         mListViewDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -126,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (mBluetoothAdapter.isEnabled()) {
-                //searchAndDisplayBluetoothDevices();
+                searchAndDisplayBluetoothDevices();
             }
         }
 
@@ -158,9 +164,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connectDevice(View view) {
-        mDeviceList.clear();
-        mDeviceNamesList.clear();
-        searchAndDisplayBluetoothDevices();
+        Toast.makeText(this, "Trying connecting to " + mBluetoothDevice.getName(), Toast.LENGTH_SHORT).show();
+        ConnectThread connectThread = new ConnectThread(mBluetoothDevice);
+        connectThread.start();
     }
 
     public void sendMessage(View view){
@@ -171,9 +177,16 @@ public class MainActivity extends AppCompatActivity {
             mState = DEACTIVATE_MOTOR;
             ((Button) view).setText(R.string.button_motor_OFF);
         }
-        Message completeMessage =
+        Message message =
                 mHandlerConnectedThread.obtainMessage(mState);//in this case only need send the state ON/OFF
-        completeMessage.sendToTarget();
+        message.sendToTarget();
+    }
+
+    public void setSetThreshold(View view) {
+        int threshold = Integer.parseInt(mEditTextThreshold.getText().toString());
+        Message message =
+                mHandlerConnectedThread.obtainMessage(SET_THRESHOLD, threshold);//in this case only need send the state ON/OFF
+        message.sendToTarget();
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
@@ -193,10 +206,6 @@ public class MainActivity extends AppCompatActivity {
                     if(BluetoothDevice.DEVICE_TYPE_LE == device.getType()){
                         Toast.makeText(this, device.getName() + " Is a Bluetooth LE device " , Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(this, "Trying connecting to " + device.getName(), Toast.LENGTH_SHORT).show();
-                    //bluetoothAdapter.cancelDiscovery();
-                    ConnectThread connectThread = new ConnectThread(mBluetoothDevice);
-                    connectThread.start();
                 }
 
             }
@@ -390,6 +399,12 @@ public class MainActivity extends AppCompatActivity {
                                 mmOutStream.write(message.getBytes());
                             } catch (IOException e) { }
                             break;
+                        }
+                        case SET_THRESHOLD: {
+                            String message = messageGenerator.setThreshold((int)inputMessage.obj);
+                            try {
+                                mmOutStream.write(message.getBytes());
+                            } catch (IOException e) { }
                         }
                         default: {
                             break;

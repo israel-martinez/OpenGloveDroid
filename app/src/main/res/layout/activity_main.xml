@@ -7,20 +7,10 @@
     android:layout_margin="10dp"
     tools:context="com.israel.martinez.openglovedroid.MainActivity">
 
-
-    <TextView
-        android:id="@+id/text_title_devices_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        android:textSize="20sp"
-        android:text="@string/devices_list"/>
-
     <TextView
         android:id="@+id/text_view_device_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/text_title_devices_list"
         android:textSize="15sp"
         android:text="@string/device_name"/>
 
@@ -38,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="30dp"
         android:drawableEnd="@android:drawable/stat_sys_data_bluetooth"
         android:text="@string/button_connect"
         android:onClick="connectDevice"/>
@@ -48,32 +38,68 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="30dp"
         android:text="@string/button_motor_OFF"
         android:onClick="sendMessage"/>
 
     <TextView
         android:id="@+id/text_view_flexor"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/button_send_message"
+        android:layout_marginTop="10dp"
         android:text="@string/flexor_value"/>
 
     <ProgressBar
         android:id="@+id/progress_bar_flexor"
-        android:layout_width="100dp"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_alignEnd="@id/text_view_flexor"
-        android:layout_alignBaseline="@id/text_view_flexor"
+        android:layout_below="@+id/button_send_message"
+        android:layout_alignParentEnd="true"
         android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
         android:indeterminate="false"
         style="@android:style/Widget.ProgressBar.Horizontal"/>
 
+    <TextView
+        android:id="@+id/text_view_threshold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/text_view_flexor"
+        android:layout_marginTop="20dp"
+        android:text="@string/flexors_threshold"/>
+
+    <EditText
+        android:id="@+id/edit_text_threshold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/text_view_threshold"
+        android:layout_centerHorizontal="true"
+        android:textSize="15sp"
+        android:text="@string/zero"/>
+
+    <Button
+        android:id="@+id/button_set_threshold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/text_view_threshold"
+        android:layout_alignParentEnd="true"
+        android:text="@string/button_set_threshold"
+        android:onClick="setSetThreshold"/>
+
+    <TextView
+        android:id="@+id/text_view_title_devices_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/button_set_threshold"
+        android:textAlignment="center"
+        android:textSize="20sp"
+        android:text="@string/devices_list"/>
 
     <ListView
         android:id="@+id/list_view_devices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/progress_bar_flexor"/>
+        android:layout_below="@+id/text_view_title_devices_list"/>
 
 </RelativeLayout>

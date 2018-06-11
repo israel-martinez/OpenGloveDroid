@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpenGloveDroid</string>
+    <string name="app_name">OpenGlove</string>
 
     <string name="device_name">Device name:</string>
     <string name="device_name_openglove">OpenGloveIZQ</string>
@@ -22,6 +22,10 @@
     <string name="button_motor_ON">Motor On</string>
     <string name="button_motor_OFF">Motor Off</string>
 
+    <string name="button_set_threshold">Set Threshold</string>
+
     <string name="flexor_value">Flexor value: </string>
+    <string name="flexors_threshold">Threshold: </string>
+    <string name="zero">0</string>
 
 </resources>
