@@ -2,6 +2,9 @@ package com.israel.martinez.openglovedroid;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,9 +24,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.israel.martinez.openglovedroid.IO.CSV;
 import com.israel.martinez.openglovedroid.OpenGloveJavaAPI.MessageGenerator;
-
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,10 +35,8 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int RESET_FLEXORS = 14;
 
     private static final int UPDATE_FLEXOR_VALUE = 100;
+    private static final int EVALUATION_DONE = 1000;
 
 
     private final String MY_UUID = "1e966f42-52a8-45db-9735-5db0e21b881d";
@@ -147,12 +148,19 @@ public class MainActivity extends AppCompatActivity {
                 // Gets the image task from the incoming Message object.
                 //PhotoTask photoTask = (PhotoTask) inputMessage.obj;
                 //TODO get data from threads
-                Log.e("UI_THREAD", "Receiving message on UI thread");
+                //Log.e("UI_THREAD", "Receiving message on UI thread");
                 switch (inputMessage.what) {
                     case UPDATE_FLEXOR_VALUE: {
                         mProgressBar.setProgress((int) inputMessage.obj);
                         String flexorValue = "Flexor value: " + Integer.toString((int) inputMessage.obj);
                         mTextViewFlexor.setText(flexorValue);
+                        break;
+                    }
+                    case EVALUATION_DONE: {
+                        Toast.makeText(getApplicationContext(), "Evaluation is done!", Toast.LENGTH_LONG).show();
+                        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                        MediaPlayer mp = MediaPlayer.create(getApplicationContext(), notification);
+                        mp.start();
                         break;
                     }
                     default: {
@@ -287,7 +295,6 @@ public class MainActivity extends AppCompatActivity {
                 tmp = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(mmDevice,1);
 
 
-
                 Log.e("CREATED", "BluetoothSocket!!! SUCCESS");
 
             } catch (IllegalAccessException e) {
@@ -365,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
             mmOutStream = tmpOut;
             mmBufferedReader = new BufferedReader(new InputStreamReader(mmInStream));
 
-            /* Handler for receiving the actions from UI interactions */
+            // Handler for receiving the actions from UI interactions
             mHandler = new Handler(Looper.getMainLooper()) {
                 /*
                  * handleMessage() defines the operations to perform when
@@ -439,16 +446,44 @@ public class MainActivity extends AppCompatActivity {
             // Keep listening to the InputStream until an exception occurs
             String line;
             Message message;
+
+            int samples = 1000;
+            int counter = 0;
+            ArrayList<Long> latencies = new ArrayList<>();
+            CSV csvWriter = new CSV("latency-test", "flexor1DroidGalaxy.csv");
+
+            System.out.println(csvWriter.toString());
+
+            long start;
+            long diff;
+
             while (true) {
                 try {
                     // Read from the InputStream
                     //TODO capture message from the flexor
+                    start = System.nanoTime();
                     line = analogRead(17);
-                    if(line != null) Log.e("BUFFER: ", line);
-                    //TODO send message data to UI
-                    message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE, Integer.parseInt(line));
-                    message.sendToTarget();
+                    diff = System.nanoTime() - start;
 
+                    if(counter < samples){
+                        latencies.add(diff);
+                        if((counter+1) % 100 == 0) System.out.println("Counter: " + counter);
+                    }else {
+                        message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE);
+                        message.sendToTarget();
+                        break;
+                    }
+                    counter++;
+
+                    if(line != null) {
+                        //Log.e("BUFFER: ", line);
+                        //TODO send message data to UI
+                        message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE, Integer.parseInt(line));
+                        message.sendToTarget();
+                    }else{
+                        Log.e("DISCONNECTED:", "BluetoothSocket is Disconnected");
+                        mmSocket.connect();
+                    }
 
                 } catch (Exception e) {
                     Log.e("Exception","Error in try read/write loop");
@@ -456,6 +491,10 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 }
             }
+
+            csvWriter.write(latencies, "latencies-ns");
+            System.out.println(csvWriter.toString());
+
         }
 
         public String analogRead(int pin){
