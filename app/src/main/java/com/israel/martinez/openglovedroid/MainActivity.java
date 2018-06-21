@@ -53,6 +53,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int UPDATE_FLEXOR_VALUE = 100;
     private static final int EVALUATION_DONE = 1000;
+    private static final int FLEXOR_EVALUATION = 500;
+    private static final int MOTOR_EVALUATION = 501;
+    private static final int IMU_EVALUATION = 502;
+
 
 
     private final String MY_UUID = "1e966f42-52a8-45db-9735-5db0e21b881d";
@@ -61,13 +65,13 @@ public class MainActivity extends AppCompatActivity {
     private String mActivateMotor = "2,1,-1s";
     private String mPinMode = "6,1,11,1s";
 
-    // Vibe board: +11 y -12
+    // Vibe board: (+11 y -12), (+10 y -15), (+9 y -16), (+3 y -2), (+6, -8)
     ArrayList<Integer> mPins  = new ArrayList<>(
-            Arrays.asList(11, 12));
+            Arrays.asList(11, 12, 10, 15, 9, 16, 3, 2, 6, 8));
     ArrayList<String> mValuesON  = new ArrayList<>(
-            Arrays.asList("HIGH", "LOW"));
+            Arrays.asList("HIGH", "LOW", "HIGH", "LOW", "HIGH", "LOW", "HIGH", "LOW", "HIGH", "LOW"));
     ArrayList<String> mValuesOFF  = new ArrayList<>(
-            Arrays.asList("LOW", "LOW"));
+            Arrays.asList("LOW", "LOW", "LOW", "LOW", "LOW", "LOW", "LOW", "LOW", "LOW", "LOW"));
 
     // Flexor pins: 17 and  + and -
     ArrayList<Integer> mFlexorPins = new ArrayList<>(
@@ -355,6 +359,7 @@ public class MainActivity extends AppCompatActivity {
         private final OutputStream mmOutStream;
         private BufferedReader mmBufferedReader;
         private Handler mHandler;
+        private int mEvaluation = MOTOR_EVALUATION;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
@@ -412,6 +417,16 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 mmOutStream.write(message.getBytes());
                             } catch (IOException e) { }
+                            break;
+                        }
+
+                        case FLEXOR_EVALUATION: {
+                            mEvaluation = FLEXOR_EVALUATION;
+                            break;
+                        }
+                        case MOTOR_EVALUATION: {
+                            mEvaluation = MOTOR_EVALUATION;
+                            break;
                         }
                         default: {
                             break;
@@ -443,14 +458,56 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("FAIL_INITIALIZE_MOTOR", "Fail to initialize the motor");
             }
 
+            switch (mEvaluation){
+                case FLEXOR_EVALUATION:{
+                    flexorTest(1000, 1,"latency-test", "flexor1DroidGalaxy.csv");
+                }
+                case MOTOR_EVALUATION:{
+                    motorTest(1000, 5, "latency-test", "motor5DroidGalaxy.csv");
+                }
+                default:{
+                    flexorCapture();
+                    break;
+                }
+            }
+        }
+
+        private void flexorCapture(){
             // Keep listening to the InputStream until an exception occurs
             String line;
             Message message;
 
-            int samples = 1000;
+            while (true) {
+                try {
+                    // Read from the InputStream
+                    //TODO capture message from the flexor
+                    line = analogRead(17);
+
+                    if(line != null) {
+                        //Log.e("BUFFER: ", line);
+                        //TODO send message data to UI
+                        message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE, Integer.parseInt(line));
+                        message.sendToTarget();
+                    }else{
+                        Log.e("DISCONNECTED:", "BluetoothSocket is Disconnected");
+                        mmSocket.connect();
+                    }
+
+                } catch (Exception e) {
+                    Log.e("Exception","Error in try read/write loop");
+                    e.printStackTrace();
+                    break;
+                }
+            }
+        }
+
+        private void flexorTest(int samples, int flexors, String folderName, String fileName){
+            // Keep listening to the InputStream until an exception occurs
+            String line;
+            Message message;
             int counter = 0;
             ArrayList<Long> latencies = new ArrayList<>();
-            CSV csvWriter = new CSV("latency-test", "flexor1DroidGalaxy.csv");
+            CSV csvWriter = new CSV(folderName, fileName);
 
             System.out.println(csvWriter.toString());
 
@@ -494,7 +551,47 @@ public class MainActivity extends AppCompatActivity {
 
             csvWriter.write(latencies, "latencies-ns");
             System.out.println(csvWriter.toString());
+        }
 
+        //This test consist in 1000 activations and desactivations of n motors
+        private void motorTest(int samples, int motors, String folderName, String fileName){
+            String message;
+            int counter = 0;
+            ArrayList<Long> latencies = new ArrayList<>();
+            ArrayList<Integer> pins = new ArrayList<>(mPins.subList(0, (motors*2)-1));
+            ArrayList<String> valuesON = new ArrayList<>(mValuesON.subList(0, (motors*2)-1));
+            ArrayList<String> valuesOFF = new ArrayList<>(mValuesOFF.subList(0, (motors*2)-1));
+            CSV csvWriter = new CSV(folderName, fileName);
+
+            System.out.println(csvWriter.toString());
+
+            long start;
+            long diff;
+
+            while (true) {
+                if(counter < samples){
+                    try {
+                        // TODO latencies.add(diff);
+                        start = System.nanoTime();
+                        message = messageGenerator.activateMotor(pins, valuesON);
+                        mmOutStream.write(message.getBytes()); // Activate the motors
+
+                        message = messageGenerator.activateMotor(pins, valuesOFF);
+                        mmOutStream.write(message.getBytes()); // Disable the motors
+                        diff = System.nanoTime() - start;
+                        latencies.add(diff);
+                        if((counter+1) % 100 == 0) System.out.println("Counter: " + counter);
+                    } catch (IOException e) {
+                        break;
+                    }
+                }else {
+                    break;
+                }
+                counter++;
+            }
+
+            csvWriter.write(latencies, "latencies-ns");
+            System.out.println(csvWriter.toString());
         }
 
         public String analogRead(int pin){
