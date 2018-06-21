@@ -359,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
         private final OutputStream mmOutStream;
         private BufferedReader mmBufferedReader;
         private Handler mHandler;
-        private int mEvaluation = MOTOR_EVALUATION;
+        private int mEvaluation = 0;//MOTOR_EVALUATION;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
@@ -392,14 +392,15 @@ public class MainActivity extends AppCompatActivity {
 
                     switch (inputMessage.what) {
                         case DEACTIVATE_MOTOR: {
-                            String message = messageGenerator.activateMotor(mPins, mValuesOFF);
+                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,1)), new ArrayList<>(mValuesOFF.subList(0,1)));
                             try {
                                 mmOutStream.write(message.getBytes());
                             } catch (IOException e) { }
                             break;
                         }
                         case ACTIVATE_MOTOR: {
-                            String message = messageGenerator.activateMotor(mPins, mValuesON);
+                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,1)), new ArrayList<>(mValuesON.subList(0,1)));
+
                             try {
                                 mmOutStream.write(message.getBytes());
                             } catch (IOException e) { }
