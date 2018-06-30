@@ -158,13 +158,11 @@ public class MainActivity extends AppCompatActivity {
                         mProgressBar.setProgress((int) inputMessage.obj);
                         String flexorValue = "Flexor value: " + Integer.toString((int) inputMessage.obj);
                         mTextViewFlexor.setText(flexorValue);
+                        Log.e("UI_THREAD", "Receiving message on UI thread - UPDATE_FLEXOR_VALUE");
                         break;
                     }
                     case EVALUATION_DONE: {
                         Toast.makeText(getApplicationContext(), "Evaluation is done!", Toast.LENGTH_LONG).show();
-                        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                        MediaPlayer mp = MediaPlayer.create(getApplicationContext(), notification);
-                        mp.start();
                         break;
                     }
                     default: {
@@ -359,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
         private final OutputStream mmOutStream;
         private BufferedReader mmBufferedReader;
         private Handler mHandler;
-        private int mEvaluation = 0;//MOTOR_EVALUATION;
+        private int mEvaluation = 0;//FLEXOR_EVALUATION; //MOTOR_EVALUATION;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
@@ -392,14 +390,14 @@ public class MainActivity extends AppCompatActivity {
 
                     switch (inputMessage.what) {
                         case DEACTIVATE_MOTOR: {
-                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,1)), new ArrayList<>(mValuesOFF.subList(0,1)));
+                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,2)), new ArrayList<>(mValuesOFF.subList(0,2)));
                             try {
                                 mmOutStream.write(message.getBytes());
                             } catch (IOException e) { }
                             break;
                         }
                         case ACTIVATE_MOTOR: {
-                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,1)), new ArrayList<>(mValuesON.subList(0,1)));
+                            String message = messageGenerator.activateMotor(new ArrayList<>(mPins.subList(0,2)), new ArrayList<>(mValuesON.subList(0,2)));
 
                             try {
                                 mmOutStream.write(message.getBytes());
@@ -462,9 +460,11 @@ public class MainActivity extends AppCompatActivity {
             switch (mEvaluation){
                 case FLEXOR_EVALUATION:{
                     flexorTest(1000, 1,"latency-test", "flexor1DroidGalaxy.csv");
+                    break;
                 }
                 case MOTOR_EVALUATION:{
                     motorTest(1000, 5, "latency-test", "motor5DroidGalaxy.csv");
+                    break;
                 }
                 default:{
                     flexorCapture();
@@ -483,9 +483,8 @@ public class MainActivity extends AppCompatActivity {
                     // Read from the InputStream
                     //TODO capture message from the flexor
                     line = analogRead(17);
-
                     if(line != null) {
-                        //Log.e("BUFFER: ", line);
+                        Log.e("BUFFER: ", line);
                         //TODO send message data to UI
                         message = mUIHandler.obtainMessage(UPDATE_FLEXOR_VALUE, Integer.parseInt(line));
                         message.sendToTarget();
@@ -559,9 +558,9 @@ public class MainActivity extends AppCompatActivity {
             String message;
             int counter = 0;
             ArrayList<Long> latencies = new ArrayList<>();
-            ArrayList<Integer> pins = new ArrayList<>(mPins.subList(0, (motors*2)-1));
-            ArrayList<String> valuesON = new ArrayList<>(mValuesON.subList(0, (motors*2)-1));
-            ArrayList<String> valuesOFF = new ArrayList<>(mValuesOFF.subList(0, (motors*2)-1));
+            ArrayList<Integer> pins = new ArrayList<>(mPins.subList(0, (motors*2)));
+            ArrayList<String> valuesON = new ArrayList<>(mValuesON.subList(0, (motors*2)));
+            ArrayList<String> valuesOFF = new ArrayList<>(mValuesOFF.subList(0, (motors*2)));
             CSV csvWriter = new CSV(folderName, fileName);
 
             System.out.println(csvWriter.toString());
@@ -576,7 +575,7 @@ public class MainActivity extends AppCompatActivity {
                         start = System.nanoTime();
                         message = messageGenerator.activateMotor(pins, valuesON);
                         mmOutStream.write(message.getBytes()); // Activate the motors
-
+                        
                         message = messageGenerator.activateMotor(pins, valuesOFF);
                         mmOutStream.write(message.getBytes()); // Disable the motors
                         diff = System.nanoTime() - start;
